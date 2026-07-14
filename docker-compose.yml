@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Servicio 1: La aplicación Laravel usando PHP oficial
+  app:
+    image: php:8.2-apache
+    container_name: laravel-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "8000:80"
+    networks:
+      - bca-network
+    depends_on:
+      - db
+    # Comando para instalar extensiones e iniciar
+    command: bash -c "docker-php-ext-install pdo_mysql && apache2-foreground"
+
+  # Servicio 2: Base de datos MySQL 8.0
+  db:
+    image: mysql:8.0
+    container_name: bca-mysql
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: biciaventura2
+      MYSQL_ROOT_PASSWORD: bici1321
+      MYSQL_PASSWORD: user_password
+      MYSQL_USER: laravel_user
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - bca-network
+
+  # Servicio 3: phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: laravel-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db
+      - PMA_USER=root
+      - PMA_PASSWORD=bici1321
+    networks:
+      - bca-network
+    depends_on:
+      - db
+                       # Instalar dependencias necesarias para phpMyAdmin
+    command: bash -c "    
+      apt-get update &&
+      apt-get install -y git zip unzip &&
+      docker-php-ext-install pdo_mysql zip &&
+      a2enmod rewrite &&
+      apache2-foreground
+      "
+
+networks:
+  bca-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
